@@ -1,0 +1,20 @@
+<!-- templates/index.html -->
+{% extends "base.html" %}
+{% block content %}
+<div class="grid">
+  {% for event in events %}
+  <div class="event-card">
+    <img src="{{ event.image }}" alt="{{ event.name }}" />
+    <h3>{{ event.name }}</h3>
+    <p>{{ event.date }} - {{ event.location }}</p>
+    <p>{{ event.category }} - ${{ event.price }}</p>
+    <button onclick="showDetails('{{ event.id }}')">More</button>
+    <form action="/feedback/{{ event.id }}" method="POST">
+      <textarea name="feedback" placeholder="Leave feedback"></textarea>
+      <button type="submit">Submit Feedback</button>
+    </form>
+  </div>
+  {% endfor %}
+</div>
+<script src="{{ url_for('static', filename='eve.js') }}"></script>
+{% endblock %}

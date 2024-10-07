@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Event Creator Form</title>
+    <link rel="stylesheet" href="/static/organizer.css">
+</head>
+<body>
+    <div class="container">
+            <div class="progress-bar">
+                <img src="/static/images/logo.png" width="200px" height="200px"/>
+                <div class="grid-container" style="display: flex;">
+                <div class="grid-item">
+                    <div class="circle active">1</div>
+                    <div class="circle">2</div>
+                    <div class="circle">3</div>
+                </div>
+                <div class="grid-item">
+                    <p style="color: white;margin: 30px 20px;">Personal Details</p>
+                    <p style="color: white;margin: 40px 20px 0px;">Contact Details</p>
+                    <p style="color: white;margin: 40px 20px;">Event Details</p>
+                </div>
+            </div>
+               <!--- <img src="form.png" width="200px" height="200px"/>-->
+            </div>
+        <div class="form-content">
+            <form id="eventForm" name="eventForm">
+                <div class="form-section active" id="step1">
+                    <h2 >Let's Organize an Event</h2><hr><br>
+                    <label for="name" style="width: 100%;">Full Name:</label>
+                    <input type="text" id="name" name="name" required style="width: 100%;">
+
+                    <div class="radioLeft">
+                        <label for="gender" style="margin-bottom: 15px;">Gender:</label>
+                        <input type="radio" id="male" name="gender" value="male" style="display: inline;">
+                        <label for="male" style="display: inline;">Male</label>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                        <input type="radio" id="female" name="gender" value="female" style="display: inline;">
+                        <label for="female" style="display: inline;">Female</label>
+                    </div>
+                    <button type="button" class="nextBtn" onclick="nextStep(2)" style="margin-top: 30px;">Next</button>
+                </div>
+
+                <!-- Step 2: Contact Details -->
+                <div class="form-section" id="step2">
+                    <h2>Contact Details</h2><hr><br>
+                    <label for="email" style="width: 100%;">Email:</label>
+                    <input type="email" id="email" name="email" style="width: 100%;" required>
+
+                    <label for="phone" style="width: 100%;">Phone Number:</label>
+                    <input type="tel" id="phone" name="phone" pattern="[0-9]{10}" placeholder="1234567890" style="width: 100%;" required>
+
+                    <label for="address" style="width: 100%;">Address:</label>
+                    <input type="text" id="address" name="address" style="width: 100%;" required>
+
+                    <label for="city" style="width: 100%;">City:</label>
+                    <input type="text" id="city" name="city" style="width: 100%;" required>
+
+                    <div class="row">
+                        <div class="column">
+                            <label for="state" style="width: 100%;">State:</label>
+                            <input type="text" id="state" name="state" style="width: 100%;"required>
+                        </div>
+                        <div class="column">
+                            <label for="pincode" style="width: 100%;">Pin Code:</label>
+                            <input type="text" id="pincode" name="pincode" pattern="[0-9]{6}" placeholder="123456" style="width: 100%;"required>
+                        </div>
+                    </div>
+
+                    <button type="button" class="prevBtn" onclick="prevStep(1)">Back</button>
+                    <button type="button" class="nextBtn" onclick="nextStep(3); validation()">Next</button>
+                </div>
+
+                <!-- Step 3: Event Details -->
+                <div class="form-section" id="step3">
+                    <h2>Tell us about Event</h2><hr><br>
+                    <label for="eventName" style="width: 100%;">Event Name:</label>
+                    <input type="text" id="eventName" name="eventName" style="width: 100%;" required>
+
+                    <label for="description" style="width: 100%;">Description:</label>
+                    <textarea id="description" name="description" style="width: 100%;" required></textarea>
+
+                    <label for="eventLocation" style="width: 100%;">Event Location:</label>
+                    <input type="text" id="eventLocation" name="eventLocation" style="width: 100%;" required>
+                    <div class="row">
+                        <div class="column">
+                            <label for="dateFrom" style="width: 100%;">Date From:</label>
+                            <input type="date" id="dateFrom" name="dateFrom" style="width: 100%;" required>
+                        </div>
+                        <div class="column">
+                            <label for="dateTo" style="width: 100%;">Date To:</label>
+                            <input type="date" id="dateTo" name="dateTo" style="width: 100%;" required>
+                        </div>
+                    </div>
+                    <label for="price" style="width: 100%;">Price:</label>
+                    <input type="number" id="price" name="price" style="width: 100%;" required>
+
+                    <label for="category" style="width: 100%;">Category:</label>
+                    <select id="category" name="category" style="width: 100%;" required>
+                        <option value="music">Music</option>
+                        <option value="dance">Dance</option>
+                        <option value="party">Party</option>
+                        <option value="party">Art Exhibition</option>
+                        <option value="party">Food Festival</option>
+                        <option value="party">Sports</option>
+                    </select>
+                    <div id="otherEvent"></div>
+                    <br>
+                    <button type="button" class="prevBtn" onclick="prevStep(2)">Back</button>
+                    <button type="submit">Submit</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <script src="/static/organizer.js"></script>
+</body>
+</html>

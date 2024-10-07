@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Event Details</title>
+    <style>
+        .container {
+            max-width: 800px;
+            margin: 0 auto; /* Centers the container */
+            padding: 20px;
+        }
+
+        .event-box {
+            background: #fff;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            position: relative;
+        }
+
+        .event-box h3 {
+            margin: 0;
+        }
+
+        .event-box .more {
+            color: green;
+            cursor: pointer;
+            text-decoration: underline;
+        }
+
+        .event-details {
+            display: none;
+            margin-top: 10px;
+        }
+
+        .search-bar {
+            margin-bottom: 20px;
+            text-align: right; /* Aligns the search bar to the right */
+        }
+
+        .search-bar input[type="text"] {
+            padding: 5px;
+            font-size: 16px;
+        }
+
+        .search-bar button {
+            padding: 5px 10px;
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Search Bar -->
+        <div class="search-bar">
+            <input type="text" id="searchInput" placeholder="Search for an event">
+            <button onclick="searchEvent()">Search</button>
+        </div>
+
+        <!-- Event Display -->
+        <div id="events"></div>
+    </div>
+
+    <script>
+        // Fetch and display all events on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            fetchEvents();
+        });
+
+        function fetchEvents(searchTerm = '') {
+            const url = searchTerm ? `/events?search=${searchTerm}` : '/events';
+            fetch(url)
+                .then(response => response.json())
+                .then(events => {
+                    const eventsContainer = document.getElementById('events');
+                    eventsContainer.innerHTML = ''; // Clear previous events
+
+                    events.forEach(eventData => {
+                        // Create event box
+                        const eventBox = document.createElement('div');
+                        eventBox.className = 'event-box';
+
+                        const eventName = document.createElement('h3');
+                        eventName.textContent = eventData.eventName;
+
+                        const eventDescription = document.createElement('p');
+                        eventDescription.textContent = eventData.description;
+
+                        const moreLink = document.createElement('span');
+                        moreLink.textContent = 'more';
+                        moreLink.className = 'more';
+                        moreLink.onclick = function() {
+                            const details = document.getElementById('details-' + eventData._id);
+                            if (details.style.display === 'none') {
+                                details.style.display = 'block';
+                                moreLink.textContent = 'less';
+                            } else {
+                                details.style.display = 'none';
+                                moreLink.textContent = 'more';
+                            }
+                        };
+
+                        const eventDetails = document.createElement('div');
+                        eventDetails.id = 'details-' + eventData._id;
+                        eventDetails.className = 'event-details';
+                        eventDetails.innerHTML = `
+                            <p><strong>Event Location:</strong> ${eventData.eventLocation}</p>
+                            <p><strong>Date From:</strong> ${eventData.dateFrom}</p>
+                            <p><strong>Date To:</strong> ${eventData.dateTo}</p>
+                            <p><strong>Price:</strong> ${eventData.price}</p>
+                            <p><strong>Category:</strong> ${eventData.category}</p>
+                            <p><strong>Organizer Name:</strong> ${eventData.name}</p>
+                        `;
+
+                        const updateButton = document.createElement('button');
+                        updateButton.textContent = 'Update';
+                        updateButton.style.marginLeft = '50px';
+                        updateButton.style.marginRight = '20px';
+                        updateButton.onclick = function() {
+                            window.location.href = `/updateEvent/${eventData._id}`;
+                        };
+
+
+                        const deleteButton = document.createElement('button');
+                        deleteButton.textContent = 'Delete';
+                        deleteButton.onclick = function() {
+                            if (confirm('Are you sure you want to delete this event?')) {
+                                fetch(`/event/${eventData._id}`, {
+                                    method: 'DELETE'
+                                })
+                                .then(() => fetchEvents()) // Refresh the event list
+                                .catch(console.error);
+                            }
+                        };
+
+                        eventBox.appendChild(eventName);
+                        eventBox.appendChild(eventDescription);
+                        eventBox.appendChild(moreLink);
+                        eventBox.appendChild(eventDetails);
+                        eventBox.appendChild(updateButton);
+                        eventBox.appendChild(deleteButton);
+                        eventsContainer.appendChild(eventBox);
+                    });
+                });
+        }
+
+        // Function to handle search
+        function searchEvent() {
+            const searchInput = document.getElementById('searchInput').value;
+            fetchEvents(searchInput);
+        }
+    </script>
+</body>
+</html>

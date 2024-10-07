@@ -1,0 +1,24 @@
+// grpc_event.proto
+syntax = "proto3";
+
+service EventService {
+  rpc GetEvents(EventRequest) returns (EventResponse);
+}
+
+message EventRequest {
+  string query = 1;
+}
+
+message EventResponse {
+  repeated Event events = 1;
+}
+
+message Event {
+  string id = 1;
+  string name = 2;
+  string date = 3;
+  string location = 4;
+  string image = 5;
+  string category = 6;
+  string price = 7;
+}

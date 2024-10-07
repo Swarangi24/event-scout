@@ -1,0 +1,132 @@
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f0f0f0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+}
+
+.container {
+    display: flex;
+    width: 80%;
+    max-width: 800px;
+    background-color: #fff;
+    border-radius: 10px;
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+}
+
+.progress-bar {
+    width: 35%;
+    background-color: #008000;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+    position: relative;
+}
+
+.progress-bar .circle {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background-color: green;
+    color: #fff;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-weight: bold;
+    border: 2px solid #fff;
+    margin: 15px 0px;
+    position: relative;
+    z-index: 1;
+}
+
+.progress-bar .circle.active {
+    background-color: #fff;
+    color: green;
+    border: 2px solid green;
+}
+
+.form-content {
+    width: 75%;
+    padding: 30px;
+    background-color: #f5f5dc;
+}
+
+.form-section {
+    display: none;
+}
+
+.form-section.active {
+    display: block;
+}
+
+h2 {
+    color: green;
+    margin-bottom: 20px;
+}
+
+label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: bold;
+}
+
+input, select, textarea {
+
+    padding: 10px;
+    margin-bottom: 15px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    box-sizing: border-box;
+}
+.event-details {
+    display: none;
+    margin-top: 10px;
+}
+
+.date-range {
+    display: flex;
+    justify-content: space-between;
+}
+
+.date-range > div {
+    flex: 1;
+    margin-right: 10px;
+}
+
+.date-range > div:last-child {
+    margin-right: 0;
+}
+
+button {
+    padding: 10px 15px;
+    background-color: green;
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    margin-right: 10px;
+}
+
+button:hover {
+    background-color: darkgreen;
+}
+
+.row {
+    display: flex;
+    justify-content: space-between;
+}
+
+.column {
+    flex: 1;
+    margin-right: 10px;
+}
+
+.column:last-child {
+    margin-right: 0;
+}
