@@ -1,3 +1,4 @@
+
 .event-scout-section {
   background-color: #fff;
   display: flex;
@@ -14,17 +15,18 @@
     transition: background-color 0.3s ease;
 }
 
+
 .event-scout-section .sign-up:hover {
     background-color: gray;
     color: white;
 }
 
 .hero-container {
+  position: relative;
   display: flex;
   flex-direction: column;
   border-radius: 30px;
   box-shadow: 0 4px 4px rgba(0, 0, 0, 0.25);
-  position: relative;
   min-height: 222px;
   width: 100%;
   align-items: start;
@@ -32,11 +34,16 @@
   padding: 15px 10px 285px;
 }
 
-
-.hero-container h1 {
+.head {
+  box-sizing: border-box;
+    margin-top: 180px;
+  top: 90%;
+    left: 20%;
+  transform: translate(-50%, -50%);
+}
+.head h1 {
     font-size: 5rem;
     font-weight: bold;
-    margin-bottom: 20px;
     text-decoration-color: white;
 }
 .hero-background {
@@ -46,6 +53,7 @@
   width: 100%;
   object-fit: cover;
   object-position: center;
+
 }
 
 .header-content {
@@ -92,11 +100,6 @@
   border: 1px solid #000;
 }
 
-.brand-name {
-  margin: 172px 0 0 53px;
-  font: 400 80px/1 "Rubik Mono One", sans-serif;
-}
-
 .search-bar {
   position: relative;
   border-radius: 40px;
@@ -107,7 +110,8 @@
   width: 507px;
   gap: 20px;
   font-size: 18px;
-  padding: 8px 19px;
+
+  padding: 9px;
   border: 1px solid rgba(0, 0, 0, 0.4);
 }
 .search-bar input {
@@ -186,7 +190,19 @@
   border-radius: 40px;
 }
 
-
+.social-media {
+            display: flex;
+            gap: 10px;
+}
+.social-media a {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 50px;
+            height: 50px;
+            border-radius: 50px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
 .events {
   display: flex;
   justify-content: space-between;

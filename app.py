@@ -1,4 +1,5 @@
 import json
+import urllib
 
 from flask import Flask, request, jsonify, render_template, redirect, flash, url_for, session
 #from flask import pymongo, bcrypt
@@ -10,11 +11,12 @@ from grpc_event_pb2 import EventRequest
 from grpc_event_pb2_grpc import EventServiceStub
 from pymongo import MongoClient
 import requests
+from urllib.parse import urlencode
 import logging
 logging.basicConfig(level=logging.DEBUG)
 
 # Home Route to Render the Form
-app = Flask(__name__)
+app = Flask(__name__ )
 app.config["MONGO_URI"] = "mongodb://localhost:27017/eventdb"
 app.secret_key = '6692a191b7c75f139ddcea9dfc7d1c8f'
 mongo = PyMongo(app)
@@ -32,9 +34,8 @@ def index():
 def form():
     return render_template('organizerForm.html')
 
-def fetch_events_from_serpapi():
+def fetch_events_from_serpapi(url):
     # Fetch events data from SerpAPI
-    url = f"https://serpapi.com/search.json?engine=google_events&q=Events+in+Mumbai&hl=en&gl=us&api_key={SERP_API_KEY}"
     response = requests.get(url)
     if response.status_code == 200:
         return response.json().get('events_results', [])
@@ -42,10 +43,18 @@ def fetch_events_from_serpapi():
 
 @app.route('/browse.html')
 def browse():
-    # Fetch events using gRPC and SerpAPI
-    events = fetch_events_from_serpapi()
-    events_collection.insert_many(events)  # Store events in MongoDB
+    event_name = request.args.get('event')
+
+    # Construct the URL for SerpAPI
+    if not event_name:
+        url = f"https://serpapi.com/search.json?engine=google_events&q=Events+in+Maharashtra&hl=en&gl=us&api_key={SERP_API_KEY}"
+    else:
+        url = f"https://serpapi.com/search.json?engine=google_events&q=Events={event_name}+in+Maharashtra&hl=en&gl=us&api_key={SERP_API_KEY}"
+
+    events = fetch_events_from_serpapi(url)
     return render_template('browse.html', events=events)
+
+
 
 @app.route('/feedback/<event_id>', methods=['POST'])
 def feedback(event_id):
@@ -61,8 +70,6 @@ def event_details():
     return render_template('eventDetails.html')
 
 # Create Event
-
-
 @app.route('/event', methods=['POST'])
 def create_event():
     data = request.json

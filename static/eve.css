@@ -28,21 +28,34 @@ body {
     text-decoration: none;
 }
 
+
+
 .grid {
     display: flex;
     flex-wrap: wrap;
-    padding: 20px;
+    gap: 3rem;
 }
 
-.event-card {
-    border: 1px solid #ccc;
-    padding: 15px;
-    margin: 10px;
-    width: 200px;
+.event-card .card {
     text-align: center;
+    border: 1px solid #ccc;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    border-radius: 8px;
+    width: 280px;
+    margin:auto;
 }
 
-.event-card img {
+.event-card .card-img-top {
+    max-height: 200px;
+    object-fit: cover;
     max-width: 100%;
     height: auto;
 }
+
+.filter-options {
+    padding: 10px;
+    background-color: #f8f9fa;
+    border-radius: 5px;
+    margin-bottom: 20px;
+}
+
