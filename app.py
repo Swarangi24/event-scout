@@ -10,6 +10,12 @@ from pymongo import MongoClient
 import bcrypt
 import jwt
 from datetime import datetime, timedelta
+from authlib.jose import jwt
+import os  # For accessing environment variables
+from flask import Flask, redirect, url_for, request, session, jsonify, render_template  # Flask core functions and classes
+from flask_dance.contrib.google import make_google_blueprint, google  # Google OAuth integration
+from google.oauth2.credentials import Credentials  # For handling Google OAuth credentials
+from googleapiclient.discovery import build  # For interacting with Google APIs
 
 logging.basicConfig(level=logging.DEBUG)
 # Home Route to Render the Form
@@ -27,8 +33,8 @@ channel = grpc.insecure_channel('localhost:50051')
 stub = EventServiceStub(channel)
 SERP_API_KEY = "cc77d3bb5a1c77305d0b96c1f02875eb56cbe5bca3040e591437b56204c0ee90"
 
-# Home Route to Render the Form
-@app.route('/')
+
+@app.route("/")
 def index():
     message = request.args.get('message')
     return render_template('index.html', message=message)
@@ -84,7 +90,7 @@ def register():
                 "email": email,
                 "exp": datetime.utcnow() + timedelta(hours=1)  # Token expires in 1 hour
             }
-            token = jwt.encode(token_payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
+            token = jwt.encode({'alg': JWT_ALGORITHM, 'typ': 'JWT'}, token_payload, JWT_SECRET)
 
             # Insert user into MongoDB
             user_input = {'name': user, 'email': email, 'password': hashed, 'token': token}
@@ -96,9 +102,9 @@ def register():
     return render_template('register.html')
 
 
-@app.route("/login", methods=["POST", "GET"])
-def login():
-    message = ' '
+@app.route("/loginn", methods=["POST", "GET"])
+def loginn():
+    message = ''
     if "email" in session:
         return redirect(url_for("index"))
 
@@ -115,7 +121,7 @@ def login():
                     "email": email,
                     "exp": datetime.utcnow() + timedelta(hours=1)  # Token expires in 1 hour
                 }
-                token = jwt.encode(token_payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
+                token = jwt.encode({'alg': JWT_ALGORITHM, 'typ': 'JWT'}, token_payload, JWT_SECRET)
 
                 # Update the user's token in MongoDB
                 records.update_one({"email": email}, {"$set": {"token": token}})
@@ -146,7 +152,7 @@ def logout():
 def protected():
     if "email" in session and is_token_valid(session["email"]):
         return "This is a protected route!"
-    return redirect(url_for("login", message="Please log in to access this page."))
+    return redirect(url_for("loginn", message="Please log in to access this page."))
 
 
 def fetch_events_from_serpapi(url):
@@ -157,8 +163,51 @@ def fetch_events_from_serpapi(url):
     return []
 
 
+# Google OAuth configuration
+google_blueprint = make_google_blueprint(
+    client_id='912370917797-c08nfe40bnvl9qog13uml20n2gieqhea.apps.googleusercontent.com',
+    client_secret='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',
+    scope=["https://www.googleapis.com/auth/userinfo.profile",
+           "https://www.googleapis.com/auth/userinfo.email",
+           "https://www.googleapis.com/auth/calendar"],
+    redirect_to="oauth_callback"
+)
+app.register_blueprint(google_blueprint, url_prefix="/login")
+
+
+@app.route('/oauth_callback')
+def oauth_callback():
+    # This route will be called after Google OAuth login is completed
+    if not google.authorized:
+        return redirect(url_for('google.login'))
+
+    # Exchange the authorization code for access and refresh tokens
+    resp = google.get("/oauth2/v2/userinfo")
+    if not resp.ok:
+        flash("Failed to fetch user info", "danger")
+        return redirect(url_for("index"))
+
+    # Get the user information and tokens
+    user_info = resp.json()
+    session['user_info'] = user_info
+
+    # Store tokens in session
+    oauth_token = google.token["access_token"]
+    refresh_token = google.token["refresh_token"]
+    session['google_oauth_token'] = oauth_token
+    session['google_oauth_refresh_token'] = refresh_token
+
+    # Redirect to browse.html after successful login
+    return redirect(url_for('browse'))
+
+
 @app.route('/browse.html')
 def browse():
+    if not google.authorized:
+        return redirect(url_for('google.login'))
+    resp = google.get("/oauth2/v2/userinfo")
+    assert resp.ok, resp.text
+    user_info = resp.json()
     event_name = request.args.get('event')
 
     # Construct the URL for SerpAPI
@@ -168,7 +217,66 @@ def browse():
         url = f"https://serpapi.com/search.json?engine=google_events&q=Events={event_name}+in+Maharashtra&hl=en&gl=us&api_key={SERP_API_KEY}"
 
     events = fetch_events_from_serpapi(url)
-    return render_template('browse.html', events=events)
+    return render_template('browse.html', user_info=user_info, events=events)
+
+
+@app.route('/login/google/authorized')
+def google_authorized():
+    # This function is called when Google redirects back to your app after authorization.
+    if not google.authorized:
+        return redirect(url_for('google.login'))
+
+    # Use Flask-Dance to get user information
+    resp = google.get("/oauth2/v2/userinfo")
+    assert resp.ok, resp.text
+    user_info = resp.json()
+
+    # Optionally, save user info to session or database
+    session['user_info'] = user_info
+
+    # Redirect to the browse page
+    return redirect(url_for('browse'))
+
+
+@app.route('/schedule_event', methods=['POST'])
+def schedule_event():
+    if not google.authorized:
+        return redirect(url_for('google.login'))
+
+    # Get event details from the request
+    event_title = request.form.get('title')
+    event_date = request.form.get('date')  # Format should be "YYYY-MM-DD"
+    event_location = request.form.get('location')
+    event_description = request.form.get('description')
+
+    # Create event on Google Calendar
+    credentials = Credentials(
+        token=session['google_oauth_token'],
+        refresh_token=session['google_oauth_refresh_token'],
+        token_uri="https://oauth2.googleapis.com/token",
+        client_id='912370917797-c08nfe40bnvl9qog13uml20n2gieqhea.apps.googleusercontent.com',
+        client_secret='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'
+    )
+
+    service = build('calendar', 'v3', credentials=credentials)
+
+    event = {
+        'summary': event_title,
+        'location': event_location,
+        'description': event_description,
+        'start': {
+            'dateTime': f'{event_date}T09:00:00',
+            'timeZone': 'UTC',
+        },
+        'end': {
+            'dateTime': f'{event_date}T10:00:00',
+            'timeZone': 'UTC',
+        }
+    }
+
+    # Insert the event into the calendar
+    event_result = service.events().insert(calendarId='primary', body=event).execute()
+    return jsonify({'status': 'success', 'event_id': event_result['id']}), 200
 
 
 @app.route('/organizerForm.html')
