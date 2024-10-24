@@ -1,97 +1,240 @@
 {% extends "base.html" %}
 {% block content %}
+    <script>
+        async function scheduleEvent(eventId) {
+            const formData = new FormData(document.getElementById(`event-form-${eventId}`));
+            const response = await fetch('/schedule_event', {
+                method: 'POST',
+                body: formData
+            });
 
-<style>
-  .card-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-    gap: 1.5rem;
-  }
-  .event-card {
-    display: flex;
-    flex-direction: column;
-    height: 100%;
-  }
-  .card-content {
-    flex-grow: 1;
-    display: flex;
-    flex-direction: column;
-  }
-  .event-title {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-  }
-  .action-button {
-    width: 40px;
-    height: 40px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-  }
-  .feedback-input {
-    flex-grow: 1;
-    min-width: 0;
-  }
-</style>
+            const result = await response.json();
+            if (result.status === 'success') {
+                alert('Event scheduled successfully!');
+            } else {
+                alert('Failed to schedule the event.');
+            }
+        }
+    </script>
+    <style>
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1.5rem;
+        }
 
-<div class="container mx-auto px-4 py-8">
-  <div class="card-grid">
-    {% for event in events %}
-    <div class="event-card bg-white rounded-xl shadow-lg overflow-hidden transition-transform duration-300 hover:scale-105">
-      <img src="{{ event.image if event.image else event.thumbnail }}" alt="{{ event.title }}" class="w-full h-48 object-cover">
-      <div class="card-content p-4">
-        <div class="flex justify-between items-start mb-2">
-          <div class="flex-grow pr-2">
-            <h4 class="event-title text-xl font-bold text-gray-800">{{ event.title }}</h4>
-            <p class="text-sm text-gray-600">{{ event.date.when }}</p>
-          </div>
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-box-arrow-up-right text-gray-500 flex-shrink-0" viewBox="0 0 16 16">
-            <path fill-rule="evenodd" d="M8.636 3.5a.5.5 0 0 0-.5-.5H1.5A1.5 1.5 0 0 0 0 4.5v10A1.5 1.5 0 0 0 1.5 16h10a1.5 1.5 0 0 0 1.5-1.5V7.864a.5.5 0 1 0-1 0V14.5a.5.5 0 0 1-.5.5h-10a.5.5 0 0 1-.5-.5v-10a.5.5 0 0 1 .5-.5h6.636a.5.5 0 0 0 .5-.5z"/>
-            <path fill-rule="evenodd" d="M16 .5a.5.5 0 0 0-.5-.5h-5a.5.5 0 0 0 0 1h3.793L6.146 9.146a.5.5 0 1 0 .708.708L15 1.707V5.5a.5.5 0 0 0 1 0v-5z"/>
-          </svg>
-        </div>
-        <div class="flex items-center justify-between mb-4">
-          <div class="flex items-center">
+        .event-card {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            position: relative;
+        }
+
+        .card-content {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .event-title {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+        }
+
+        .action-button {
+            width: 40px;
+            height: 40px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .feedback-input {
+            flex-grow: 1;
+            min-width: 0;
+        }
+
+        .sliding-box {
+            position: absolute;
+            right: -300px; /* Start hidden off-screen */
+            top: 0;
+            width: 300px;
+            background-color: white;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+            transition: right 0.3s ease; /* Slide effect */
+            padding: 10px;
+            z-index: 10;
+        }
+
+        .sliding-box.active {
+            right: 0; /* Slide in */
+        }
+
+        .share-dropdown {
+            position: absolute; /* Position relative to the button */
+            background-color: white;
+            border: 1px solid #ccc;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            z-index: 100;
+        }
+
+        .share-dropdown a {
+            display: block;
+            padding: 8px 12px;
+            color: #333;
+            text-decoration: none;
+        }
+
+        .share-dropdown a:hover {
+            background-color: #f0f0f0; /* Highlight on hover */
+        }
+
+    </style>
+
+    <div class="container mx-auto px-4 py-8">
+        <div class="card-grid">
+            {% for event in events %}
+                <div class="event-card bg-white rounded-xl shadow-lg overflow-hidden transition-transform duration-300 hover:scale-105">
+                    <img src="{{ event.image if event.image else event.thumbnail }}" alt="{{ event.title }}"
+                         class="w-full h-48 object-cover">
+                    <div class="card-content p-4">
+                        <div class="flex justify-between items-start mb-2">
+                            <div class="flex-grow pr-2">
+                                <h4 class="event-title text-xl font-bold text-gray-800">{{ event.title }}</h4>
+                                <p class="text-sm text-gray-600">{{ event.date.when }}</p>
+                            </div>
+                            <button class="action-button" onclick="toggleSlidingBox(this)">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
+                                     class="bi bi-box-arrow-up-right text-gray-500 flex-shrink-0" viewBox="0 0 16 16">
+                                    <path fill-rule="evenodd"
+                                          d="M8.636 3.5a.5.5 0 0 0-.5-.5H1.5A1.5 1.5 0 0 0 0 4.5v10A1.5 1.5 0 0 0 1.5 16h10a1.5 1.5 0 0 0 1.5-1.5V7.864a.5.5 0 1 0-1 0V14.5a.5.5 0 0 1-.5.5h-10a.5.5 0 0 1-.5-.5v-10a.5.5 0 0 1 .5-.5h6.636a.5.5 0 0 0 .5-.5z"/>
+                                    <path fill-rule="evenodd"
+                                          d="M16 .5a.5.5 0 0 0-.5-.5h-5a.5.5 0 0 0 0 1h3.793L6.146 9.146a.5.5 0 1 0 .708.708L15 1.707V5.5a.5.5 0 0 0 1 0v-5z"/>
+                                </svg>
+                            </button>
+                        </div>
+                        <div class="flex items-center justify-between mb-4 mt-4">
+                            <div class="flex items-center">
             <span class="font-semibold mr-2 flex items-center gap-1">Rating: {{ event.venue.rating if event.venue else 'N/A' }}
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-star-fill" viewBox="0 0 16 16">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-star-fill"
+                   viewBox="0 0 16 16">
                 <path d="M3.612 15.443c-.386.198-.824-.149-.746-.592l.83-4.73L.173 6.765c-.329-.314-.158-.888.283-.95l4.898-.696L7.538.792c.197-.39.73-.39.927 0l2.184 4.327 4.898.696c.441.062.612.636.282.95l-3.522 3.356.83 4.73c.078.443-.36.79-.746.592L8 13.187l-4.389 2.256z"/>
               </svg>
             </span>
-          </div>
-          <div class="flex space-x-2">
-            <button class="action-button bg-green-500 text-white rounded-lg">
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-calendar" viewBox="0 0 16 16">
-                <path d="M3.5 0a.5.5 0 0 1 .5.5V1h8V.5a.5.5 0 0 1 1 0V1h1a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h1V.5a.5.5 0 0 1 .5-.5zM1 4v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V4H1z"/>
-              </svg>
-            </button>
-            <button class="action-button bg-green-500 text-white rounded-lg">
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-chat-right-text" viewBox="0 0 16 16">
-                <path d="M2 1a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h9.586a2 2 0 0 1 1.414.586l2 2V2a1 1 0 0 0-1-1H2zm12-1a2 2 0 0 1 2 2v12.793a.5.5 0 0 1-.854.353l-2.853-2.853a1 1 0 0 0-.707-.293H2a2 2 0 0 1-2-2V2a2 2 0 0 1 2-2h12z"/>
-                <path d="M3 3.5a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5zM3 6a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9A.5.5 0 0 1 3 6zm0 2.5a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1-.5-.5z"/>
-              </svg>
-            </button>
-            <button class="action-button bg-green-500 text-white rounded-lg">
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-share" viewBox="0 0 16 16">
-                <path d="M13.5 1a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3zM11 2.5a2.5 2.5 0 1 1 .603 1.628l-6.718 3.12a2.499 2.499 0 0 1 0 1.504l6.718 3.12a2.5 2.5 0 1 1-.488.876l-6.718-3.12a2.5 2.5 0 1 1 0-3.256l6.718-3.12A2.5 2.5 0 0 1 11 2.5zm-8.5 4a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3zm11 5.5a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3z"/>
-              </svg>
-            </button>
-          </div>
+                            </div>
+                            <div class="flex space-x-2">
+                                <button class="action-button bg-green-500 text-white rounded-lg">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor"
+                                         class="bi bi-calendar" viewBox="0 0 16 16">
+                                        <path d="M3.5 0a.5.5 0 0 1 .5.5V1h8V.5a.5.5 0 0 1 1 0V1h1a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h1V.5a.5.5 0 0 1 .5-.5zM1 4v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V4H1z"/>
+                                    </svg>
+                                </button>
+                                <form id="event-form-{{ event.id }}">
+                                    <input type="hidden" name="title" value="{{ event.title }}">
+                                    <input type="hidden" name="date" value="{{ event.date.when }}">
+                                    <input type="hidden" name="location" value="{{ event.location }}">
+                                    <input type="hidden" name="description" value="{{ event.description }}">
+                                    <button class="action-button bg-green-500 text-white rounded-lg" type="button"
+                                            onclick="scheduleEvent('{{ event.id }}')">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"
+                                             fill="currentColor"
+                                             class="bi bi-chat-right-text" viewBox="0 0 16 16">
+                                            <path d="M2 1a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h9.586a2 2 0 0 1 1.414.586l2 2V2a1 1 0 0 0-1-1H2zm12-1a2 2 0 0 1 2 2v12.793a.5.5 0 0 1-.854.353l-2.853-2.853a1 1 0 0 0-.707-.293H2a2 2 0 0 1-2-2V2a2 2 0 0 1 2-2h12z"/>
+                                            <path d="M3 3.5a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5zM3 6a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9A.5.5 0 0 1 3 6zm0 2.5a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1-.5-.5z"/>
+                                        </svg>
+                                    </button>
+                                </form>
+                                <button class="action-button bg-green-500 text-white rounded-lg">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor"
+                                         class="bi bi-share" viewBox="0 0 16 16">
+                                        <path d="M13.5 1a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3zM11 2.5a2.5 2.5 0 1 1 .603 1.628l-6.718 3.12a2.499 2.499 0 0 1 0 1.504l6.718 3.12a2.5 2.5 0 1 1-.488.876l-6.718-3.12a2.5 2.5 0 1 1 0-3.256l6.718-3.12A2.5 2.5 0 0 1 11 2.5zm-8.5 4a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3zm11 5.5a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3z"/>
+                                    </svg>
+                                </button>
+                                <div class="share-dropdown hidden">
+                                    <a href="#" onclick="shareViaWhatsApp('{{ event.ticket_info[0].link }}', '{{ event.title }}')">WhatsApp</a>
+                                    <a href="#"
+                                       onclick="shareViaEmail('{{ event.ticket_info[0].link }}', '{{ event.title }}')">Email</a>
+                                    <a href="#" onclick="shareViaMessage('{{ event.link }}', '{{ event.title }}')">Message</a>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex items-center mt-auto">
+                            <input type="text" placeholder="Leave feedback"
+                                   class="feedback-input border rounded-l-lg py-2 px-3">
+                            <button class="bg-green-500 text-white rounded-r-lg px-3 py-2 h-full">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
+                                     class="bi bi-arrow-right" viewBox="0 0 16 16">
+                                    <path fill-rule="evenodd"
+                                          d="M1 8a.5.5 0 0 1 .5-.5h11.793l-3.147-3.146a.5.5 0 0 1 .708-.708l4 4a.5.5 0 0 1 0 .708l-4 4a.5.5 0 0 1-.708-.708L13.293 8.5H1.5A.5.5 0 0 1 1 8z"/>
+                                </svg>
+                            </button>
+                        </div>
+                        <!-- Sliding Box -->
+                        <div class="sliding-box" style="display: none;">
+                            <p><strong>Location:</strong> {{ event.address }}</p>
+                            <p><strong>Ticket :</strong></p>
+                            <p style="text-decoration: underline; color: blue"><a href="{{ event.ticket_info[0].link }}"
+                                                                                  target="_blank">{{ event.ticket_info[0].link }}</a>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
         </div>
-        <div class="flex items-center mt-auto">
-          <input type="text" placeholder="Leave feedback" class="feedback-input border rounded-l-lg py-2 px-3">
-          <button class="bg-green-500 text-white rounded-r-lg px-3 py-2 h-full">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-arrow-right" viewBox="0 0 16 16">
-              <path fill-rule="evenodd" d="M1 8a.5.5 0 0 1 .5-.5h11.793l-3.147-3.146a.5.5 0 0 1 .708-.708l4 4a.5.5 0 0 1 0 .708l-4 4a.5.5 0 0 1-.708-.708L13.293 8.5H1.5A.5.5 0 0 1 1 8z"/>
-            </svg>
-          </button>
-        </div>
-      </div>
     </div>
-    {% endfor %}
-  </div>
-</div>
+    <script>
+        function toggleSlidingBox(button) {
+            // Find the sliding box that is a sibling of the button
+            const card = button.closest('.event-card');
+            const slidingBox = card.querySelector('.sliding-box');
+
+            // Toggle the 'active' class to slide in/out
+            if (slidingBox.classList.contains('active')) {
+                slidingBox.classList.remove('active');
+                slidingBox.style.display = 'none'; // Hide it when not active
+            } else {
+                slidingBox.classList.add('active');
+                slidingBox.style.display = 'block'; // Show it when active
+            }
+        }
+
+        // Functions to handle sharing events
+        function shareViaWhatsApp(link, title) {
+            const message = `Check out this event: ${title} - ${link}`;
+            window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank');
+        }
+
+        function shareViaEmail(eventLink, eventTitle) {
+            const subject = encodeURIComponent(`Check out this event: ${eventTitle}`);
+            const body = encodeURIComponent(`I found this event that you might be interested in: ${eventLink}`);
+            const mailtoLink = `mailto:?subject=${subject}&body=${body}`;
+            window.location.href = mailtoLink; // Opens the default mail client
+        }
+
+
+        function shareViaMessage(link, title) {
+            const message = `Check out this event: ${title} - ${link}`;
+            alert("Copy the following link to share: " + message);
+        }
+
+        // Event listener to toggle share dropdown
+        document.querySelectorAll('.action-button.bg-green-500').forEach(button => {
+            button.addEventListener('click', function (event) {
+                const dropdown = this.nextElementSibling; // Assumes share dropdown is next
+                dropdown.classList.toggle('hidden'); // Toggle visibility of the dropdown
+                event.stopPropagation(); // Prevent click from bubbling up to the document
+            });
+        });
+
+        // Close the dropdown if clicked outside
+        document.addEventListener('click', function () {
+            document.querySelectorAll('.share-dropdown').forEach(dropdown => {
+                dropdown.classList.add('hidden'); // Hide all dropdowns
+            });
+        });
+    </script>
 
 {% endblock %}

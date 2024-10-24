@@ -1,26 +1,28 @@
-import json
-import urllib
-
-from flask import Flask, request, jsonify, render_template, redirect, flash, url_for, session
-#from flask import pymongo, bcrypt
-from flask_pymongo import PyMongo
-from bson import ObjectId
-from flask import Flask, render_template, request, redirect, url_for, flash
-import grpc
-from grpc_event_pb2 import EventRequest
-from grpc_event_pb2_grpc import EventServiceStub
-from pymongo import MongoClient
-import requests
-from urllib.parse import urlencode
 import logging
-logging.basicConfig(level=logging.DEBUG)
+import grpc
+import requests
+from bson import ObjectId
+from flask import jsonify
+from flask_pymongo import PyMongo
+from grpc_event_pb2_grpc import EventServiceStub
+from flask import Flask, render_template, request, redirect, url_for, session, flash
+from pymongo import MongoClient
+import bcrypt
+import jwt
+from datetime import datetime, timedelta
 
+logging.basicConfig(level=logging.DEBUG)
 # Home Route to Render the Form
 app = Flask(__name__ )
 app.config["MONGO_URI"] = "mongodb://localhost:27017/eventdb"
 app.secret_key = '6692a191b7c75f139ddcea9dfc7d1c8f'
+JWT_SECRET = "a588896c6c34617ae8ec6b8887c0eb3a02697670059715c9383209167ec3c39f"
+JWT_ALGORITHM = 'HS256'
 mongo = PyMongo(app)
 events_collection = mongo.db.events
+client = MongoClient('mongodb://localhost:27017/')
+db = client['eventdb']  # Change this to your database name
+records = db['register']  # Change this to your collection name
 channel = grpc.insecure_channel('localhost:50051')
 stub = EventServiceStub(channel)
 SERP_API_KEY = "cc77d3bb5a1c77305d0b96c1f02875eb56cbe5bca3040e591437b56204c0ee90"
@@ -28,11 +30,124 @@ SERP_API_KEY = "cc77d3bb5a1c77305d0b96c1f02875eb56cbe5bca3040e591437b56204c0ee90
 # Home Route to Render the Form
 @app.route('/')
 def index():
-    return render_template('index.html')
+    message = request.args.get('message')
+    return render_template('index.html', message=message)
 
-@app.route('/organizerForm.html')
-def form():
-    return render_template('organizerForm.html')
+
+def decode_token(token):
+    try:
+        return jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+    except jwt.ExpiredSignatureError:
+        return None  # Token has expired
+    except jwt.InvalidTokenError:
+        return None  # Invalid token
+
+
+def is_token_valid(email):
+    user = records.find_one({"email": email})
+    if user and user.get("token"):
+        decoded = decode_token(user["token"])
+        if decoded:
+            return True
+    return False
+
+
+@app.route("/register", methods=['POST', 'GET'])
+def register():
+    message = ''
+    if "email" in session:
+        return redirect(url_for("index"))
+
+    if request.method == "POST":
+        user = request.form.get("fullname")
+        email = request.form.get("email")
+        password1 = request.form.get("password1")
+        password2 = request.form.get("password2")
+
+        user_found = records.find_one({"name": user})
+        email_found = records.find_one({"email": email})
+
+        if user_found:
+            message = 'There already is a user by that name'
+            return render_template('register.html', message=message)
+        if email_found:
+            message = 'This email already exists in the database'
+            return render_template('register.html', message=message)
+        if password1 != password2:
+            message = 'Passwords should match!'
+            return render_template('register.html', message=message)
+        else:
+            hashed = bcrypt.hashpw(password2.encode('utf-8'), bcrypt.gensalt())
+
+            # Generate JWT token
+            token_payload = {
+                "email": email,
+                "exp": datetime.utcnow() + timedelta(hours=1)  # Token expires in 1 hour
+            }
+            token = jwt.encode(token_payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
+
+            # Insert user into MongoDB
+            user_input = {'name': user, 'email': email, 'password': hashed, 'token': token}
+            records.insert_one(user_input)
+
+            session["email"] = email
+            return redirect(url_for("index", message=f"Hello! You have registered as {email}"))
+
+    return render_template('register.html')
+
+
+@app.route("/login", methods=["POST", "GET"])
+def login():
+    message = ' '
+    if "email" in session:
+        return redirect(url_for("index"))
+
+    if request.method == "POST":
+        email = request.form.get("email")
+        password = request.form.get("password")
+
+        user_found = records.find_one({"email": email})
+        if user_found:
+            passwordcheck = user_found['password']
+            if bcrypt.checkpw(password.encode('utf-8'), passwordcheck):
+                # Generate a new JWT token on login
+                token_payload = {
+                    "email": email,
+                    "exp": datetime.utcnow() + timedelta(hours=1)  # Token expires in 1 hour
+                }
+                token = jwt.encode(token_payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
+
+                # Update the user's token in MongoDB
+                records.update_one({"email": email}, {"$set": {"token": token}})
+
+                session["email"] = email
+                return redirect(url_for("index", message=f"Hello! You have logged in as {email}"))
+
+            else:
+                message = 'Wrong password'
+                return render_template('login.html', message=message)
+        else:
+            message = 'Email not found'
+            return render_template('login.html', message=message)
+    return render_template('login.html', message=message)
+
+
+@app.route("/logout")
+def logout():
+    if "email" in session:
+        # Invalidate the token by setting it to None in the database
+        records.update_one({"email": session["email"]}, {"$set": {"token": None}})
+        session.pop("email", None)
+    return redirect(url_for("index", message="You have successfully logged out"))
+
+
+# Protected route example
+@app.route("/protected")
+def protected():
+    if "email" in session and is_token_valid(session["email"]):
+        return "This is a protected route!"
+    return redirect(url_for("login", message="Please log in to access this page."))
+
 
 def fetch_events_from_serpapi(url):
     # Fetch events data from SerpAPI
@@ -40,6 +155,7 @@ def fetch_events_from_serpapi(url):
     if response.status_code == 200:
         return response.json().get('events_results', [])
     return []
+
 
 @app.route('/browse.html')
 def browse():
@@ -55,13 +171,9 @@ def browse():
     return render_template('browse.html', events=events)
 
 
-
-@app.route('/feedback/<event_id>', methods=['POST'])
-def feedback(event_id):
-    feedback_text = request.form['feedback']
-    events_collection.update_one({'id': event_id}, {'$set': {'feedback': feedback_text}})
-    flash('Feedback submitted successfully!')
-    return redirect(url_for('browse'))
+@app.route('/organizerForm.html')
+def form():
+    return render_template('organizerForm.html')
 
 
 # Event Details Page

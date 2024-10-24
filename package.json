@@ -1,5 +1,6 @@
 {
   "dependencies": {
-    "fullcalendar": "^6.1.15"
+    "fullcalendar": "^6.1.15",
+    "mongoose": "^8.7.2"
   }
 }

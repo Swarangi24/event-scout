@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>register</title>
+    <link rel="stylesheet" href="/static/rll.css">
+</head>
+<body>
+{% if message %}
+  <div class="alert alert-secondary" role="alert">
+    <p>{{ message }}</p>
+  </div>
+{% endif %}
+    <div class="container">
+        <h2>CREATE ACCOUNT</h2>
+               <form action=" " method="post">
+
+            <label for="Fullname">Full name</label>
+            <input type="text" name="fullname" class="form-control" id="inputFullName" placeholder="Enter full name" required>
+            <label for="InputEmail">Email address</label>
+            <input type="email" name="email" class="form-control" id="InputEmail" placeholder="Enter email" required>
+            <label for="InputPassword">Password</label>
+            <input type="password" name="password1" class="form-control" id="InputPassword" placeholder="Password" required>
+            <label for="InputPassword2">Repeat Password</label>
+            <input type="password" name="password2" class="form-control" id="InputPassword2" placeholder="Repeat Password" required>
+            <button type="submit" class="btn btn-primary">SIGN UP</button>
+        </form>
+        <div class="login">
+            <p>Have already an account? <a href="/login">Login here</a></p>
+        </div>
+    </div>
+</body>
+</html>
+
+

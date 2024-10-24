@@ -32,6 +32,8 @@
   align-items: start;
   color: #fff;
   padding: 15px 10px 285px;
+        text-align: center;
+
 }
 
 .head {
@@ -80,6 +82,13 @@
   gap: 40px 67px;
   font-size: 24px;
   font-weight: 700;
+}
+.navbar-light{
+    padding:8px;
+}
+
+.navbar-header{
+    margin-right: 10px;
 }
 
 .signup-btn {

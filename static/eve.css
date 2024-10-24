@@ -28,8 +28,6 @@ body {
     text-decoration: none;
 }
 
-
-
 .grid {
     display: flex;
     flex-wrap: wrap;

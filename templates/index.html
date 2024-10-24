@@ -1,47 +1,57 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>EventScout</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>EventScout</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css"
+          integrity="sha384-9aIt2nRpC12Uk9gS9baDl411NQApFmC26EwAOH8WgZl5MYYxFfc+NcPb1dKGj7Sk" crossorigin="anonymous">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
-    <!-- MDB Bootstrap -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/mdb-ui-kit/3.10.2/mdb.min.css" rel="stylesheet"/>
-  <link rel="stylesheet" href="/static/styles.css">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css"/>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+
+    <link rel="stylesheet" href="/static/styles.css">
 </head>
 <body>
 
-  <section class="event-scout-section">
+<section class="event-scout-section">
     <header class="hero-container">
-      <img src="/static/images/bg.jpg" alt="" class="hero-background" style="border-radius: 25px">
+        <img src="/static/images/bg.jpg" alt="" class="hero-background" style="border-radius: 25px">
 
-      <div class="header-content">
-        <img src="/static/images/logo.png" alt="EventScout Logo" class="logo" style="filter: brightness(50%)">
-        <nav class="nav-links">
-          <a href="#home" style="color: white; text-decoration: none;">Home</a>
-          <a href="#about" style="color: white; text-decoration: none;">About Us</a>
-          <a href="browse.html" style="color: white; text-decoration: none;">Browse</a>
-          <a href="organizerForm.html" style="color: white; text-decoration: none;">Organize</a>
-        </nav>
-        <button class="signup-btn">
-          <span class="signup-btn-text">Sign Up</span>
-        </button>
-      </div>
-        <div class="head"><h1 style="padding-left: 570px;">
-        <span style="color:#ddc5e5 ">EV</span>
-        <span style="color:#4c1f59">ENT</span>
-        <span style="color: #ad2e2e">SCOUT</span>
-    </h1></div>
-      <form class="search-bar" role="search" onsubmit="event.preventDefault(); searchEvents();" >
-        <div class="search-input-wrapper" >
-            <img src="search-icon.png" alt="" class="search-icon">
-            <label for="search-events" class="visually-hidden">Search Events</label>
-            <input type="search" id="search-events" class="search-input" placeholder="Search Events" required>
+        <div class="header-content">
+            <img src="/static/images/logo.png" alt="EventScout Logo" class="logo" style="filter: brightness(50%)">
+            <nav class="nav-links navbar navbar-light">
+                <a href="#home" style="color: white; text-decoration: none;">Home</a>
+                <a href="#about" style="color: white; text-decoration: none;">About Us</a>
+                <a href="browse.html" style="color: white; text-decoration: none;">Browse</a>
+                <a href="eventDetails.html" style="color: white; text-decoration: none;">Organize</a>
+                {% if 'email' in session %}
+                    <a href="/logout" style="color: white; padding-left: 50px;"><span
+                            class="glyphicon glyphicon-log-out">Logout</span></a>
+                {% else %}
+                    <a href="/register" style="color: white; padding-left: 50px;"><span
+                            class="glyphicon glyphicon-user">Sign Up</span></a>
+                    <a href="/login" style="color: white;"><span class="glyphicon glyphicon-log-in">Login</span></a>
+                {% endif %}
+            </nav>
         </div>
-        <button type="submit" aria-label="Submit search">
-            <img src="search-button.png" alt="" class="search-button">
-        </button>
-      </form>
+        <div class="head"><h1 style="padding-left: 570px;">
+            <span style="color:#ddc5e5 ">EV</span>
+            <span style="color:#4c1f59">ENT</span>
+            <span style="color: #ad2e2e">SCOUT</span>
+        </h1></div>
+        <form class="search-bar" role="search" onsubmit="event.preventDefault(); searchEvents();">
+            <div class="search-input-wrapper">
+                <img src="search-icon.png" alt="" class="search-icon">
+                <label for="search-events" class="visually-hidden">Search Events</label>
+                <input type="search" id="search-events" class="search-input" placeholder="Search Events" required>
+            </div>
+            <button type="submit" aria-label="Submit search">
+                <img src="search-button.png" alt="" class="search-button">
+            </button>
+        </form>
     </header>
 
     <section class="events">
@@ -53,48 +63,66 @@
         <div class="event-card">
             <img src="/static/images/song.jpg" alt="Music Party" width="300" height="150">
             <h2>Music Party</h2>
-          <button class="" onclick="searchCategory('Music')">Search</button>
+            <button class="" onclick="searchCategory('Music')">Search</button>
         </div>
         <div class="event-card">
             <img src="{{ url_for('static', filename='ff.webp') }}" alt="Food Festival" width="300" height="150">
             <h2>Food Festival</h2>
-          <button class="" onclick="searchCategory('Food+Festival')">Search</button>
+            <button class="" onclick="searchCategory('Food+Festival')">Search</button>
         </div>
         <div class="about" style="padding-top: 7px">
             <h3>PLAN ~ DISCOVER ~ CELEBRATE</h3>
             <p>EventScout Brings your Events to Life</p>
-            <p>From concept to celebration, EventScout is dedicated to making every event a success, providing you with everything you need to turn your ideas into reality. Welcome to our all-in-one platform.</p>
+            <p>From concept to celebration, EventScout is dedicated to making every event a success, providing you with
+                everything you need to turn your ideas into reality. Welcome to our all-in-one platform.</p>
         </div>
     </section>
 
     <section class="match-vibe-section">
-      <h2 class="match-vibe-text">
-        <span>Match Your</span>
-        <span>Vibe !!!</span>
-      </h2>
-      <div class="match-vibe-images">
-        <img src="vibe-1.jpg" alt="Vibe matching illustration 1" class="vibe-image-1">
-        <img src="vibe-2.jpg" alt="Vibe matching illustration 2" class="vibe-image-2">
-      </div>
+        <h2 class="match-vibe-text">
+            <span>Match Your</span>
+            <span>Vibe !!!</span>
+        </h2>
+        <div class="match-vibe-images">
+            <img src="vibe-1.jpg" alt="Vibe matching illustration 1" class="vibe-image-1">
+            <img src="vibe-2.jpg" alt="Vibe matching illustration 2" class="vibe-image-2">
+        </div>
         <div class="social-media">
-        <!-- Facebook -->
+            <!-- Facebook -->
             <a class="btn btn-primary" style="background-color: #3b5998;" href="#!" role="button">
                 <i class="fab fa-facebook-f"></i>
             </a>
-        <!-- Twitter -->
+            <!-- Twitter -->
             <a class="btn btn-primary" style="background-color: #55acee;" href="#!" role="button">
                 <i class="fab fa-twitter"></i>
             </a>
-        <!-- Instagram -->
+            <!-- Instagram -->
             <a class="btn btn-primary" style="background-color: #ac2bac;" href="#!" role="button">
                 <i class="fab fa-instagram"></i>
             </a>
-    </div>
+        </div>
     </section>
-  </section>
+</section>
 
-  <script src="/static/scripts.js"></script>
-  <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mdb-ui-kit/3.10.2/mdb.min.js"></script>
+<script src="/static/scripts.js"></script>
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mdb-ui-kit/3.10.2/mdb.min.js"></script>
+<script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"
+        integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj"
+        crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js"
+        integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo"
+        crossorigin="anonymous"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/js/bootstrap.min.js"
+        integrity="sha384-OgVRvuATP1z7JjHLkuOU7Xw704+h835Lr+6QL9UvYjZE3Ipu6Tp75j7Bh/kR0JKI"
+        crossorigin="anonymous"></script>
+    {% if message %}
+    <script>
+        alert("{{ message }}");
+    </script>
+    {% endif %}
 
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js" integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/js/bootstrap.min.js" integrity="sha384-OgVRvuATP1z7JjHLkuOU7Xw704+h835Lr+6QL9UvYjZE3Ipu6Tp75j7Bh/kR0JKI" crossorigin="anonymous"></script>
 </body>
 </html>
