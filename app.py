@@ -162,52 +162,8 @@ def fetch_events_from_serpapi(url):
         return response.json().get('events_results', [])
     return []
 
-
-# Google OAuth configuration
-google_blueprint = make_google_blueprint(
-    client_id='912370917797-c08nfe40bnvl9qog13uml20n2gieqhea.apps.googleusercontent.com',
-    client_secret='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',
-    scope=["https://www.googleapis.com/auth/userinfo.profile",
-           "https://www.googleapis.com/auth/userinfo.email",
-           "https://www.googleapis.com/auth/calendar"],
-    redirect_to="oauth_callback"
-)
-app.register_blueprint(google_blueprint, url_prefix="/login")
-
-
-@app.route('/oauth_callback')
-def oauth_callback():
-    # This route will be called after Google OAuth login is completed
-    if not google.authorized:
-        return redirect(url_for('google.login'))
-
-    # Exchange the authorization code for access and refresh tokens
-    resp = google.get("/oauth2/v2/userinfo")
-    if not resp.ok:
-        flash("Failed to fetch user info", "danger")
-        return redirect(url_for("index"))
-
-    # Get the user information and tokens
-    user_info = resp.json()
-    session['user_info'] = user_info
-
-    # Store tokens in session
-    oauth_token = google.token["access_token"]
-    refresh_token = google.token["refresh_token"]
-    session['google_oauth_token'] = oauth_token
-    session['google_oauth_refresh_token'] = refresh_token
-
-    # Redirect to browse.html after successful login
-    return redirect(url_for('browse'))
-
-
 @app.route('/browse.html')
 def browse():
-    if not google.authorized:
-        return redirect(url_for('google.login'))
-    resp = google.get("/oauth2/v2/userinfo")
-    assert resp.ok, resp.text
-    user_info = resp.json()
     event_name = request.args.get('event')
 
     # Construct the URL for SerpAPI
@@ -217,67 +173,34 @@ def browse():
         url = f"https://serpapi.com/search.json?engine=google_events&q=Events={event_name}+in+Maharashtra&hl=en&gl=us&api_key={SERP_API_KEY}"
 
     events = fetch_events_from_serpapi(url)
-    return render_template('browse.html', user_info=user_info, events=events)
+    #return render_template('browse.html', user_info=user_info, events=events)
+    return render_template('browse.html', events=events)
 
+def load_credentials():
+    return Credentials.from_authorized_user_file('credentials.json')
 
-@app.route('/login/google/authorized')
-def google_authorized():
-    # This function is called when Google redirects back to your app after authorization.
-    if not google.authorized:
-        return redirect(url_for('google.login'))
-
-    # Use Flask-Dance to get user information
-    resp = google.get("/oauth2/v2/userinfo")
-    assert resp.ok, resp.text
-    user_info = resp.json()
-
-    # Optionally, save user info to session or database
-    session['user_info'] = user_info
-
-    # Redirect to the browse page
-    return redirect(url_for('browse'))
-
-
-@app.route('/schedule_event', methods=['POST'])
+@app.route('/api/schedule-event', methods=['POST'])
 def schedule_event():
-    if not google.authorized:
-        return redirect(url_for('google.login'))
-
-    # Get event details from the request
-    event_title = request.form.get('title')
-    event_date = request.form.get('date')  # Format should be "YYYY-MM-DD"
-    event_location = request.form.get('location')
-    event_description = request.form.get('description')
-
-    # Create event on Google Calendar
-    credentials = Credentials(
-        token=session['google_oauth_token'],
-        refresh_token=session['google_oauth_refresh_token'],
-        token_uri="https://oauth2.googleapis.com/token",
-        client_id='912370917797-c08nfe40bnvl9qog13uml20n2gieqhea.apps.googleusercontent.com',
-        client_secret='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'
-    )
-
-    service = build('calendar', 'v3', credentials=credentials)
-
-    event = {
-        'summary': event_title,
-        'location': event_location,
-        'description': event_description,
+    data = request.form
+    event_data = {
+        'summary': data['title'],
         'start': {
-            'dateTime': f'{event_date}T09:00:00',
-            'timeZone': 'UTC',
+            'dateTime': data['date'] + 'T09:00:00',  # Set time accordingly
+            'timeZone': 'America/Los_Angeles',  # Change to your time zone
         },
         'end': {
-            'dateTime': f'{event_date}T10:00:00',
-            'timeZone': 'UTC',
-        }
+            'dateTime': data['date'] + 'T10:00:00',  # Set duration accordingly
+            'timeZone': 'America/Los_Angeles',
+        },
+        'location': data['location'],
+        'description': data['description'],
     }
 
-    # Insert the event into the calendar
-    event_result = service.events().insert(calendarId='primary', body=event).execute()
-    return jsonify({'status': 'success', 'event_id': event_result['id']}), 200
+    credentials = load_credentials()
+    service = build('calendar', 'v3', credentials=credentials)
 
+    event = service.events().insert(calendarId='primary', body=event_data).execute()
+    return jsonify({'status': 'success', 'eventId': event['id']})
 
 @app.route('/organizerForm.html')
 def form():

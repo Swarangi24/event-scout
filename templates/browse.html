@@ -1,21 +1,6 @@
 {% extends "base.html" %}
 {% block content %}
-    <script>
-        async function scheduleEvent(eventId) {
-            const formData = new FormData(document.getElementById(`event-form-${eventId}`));
-            const response = await fetch('/schedule_event', {
-                method: 'POST',
-                body: formData
-            });
 
-            const result = await response.json();
-            if (result.status === 'success') {
-                alert('Event scheduled successfully!');
-            } else {
-                alert('Failed to schedule the event.');
-            }
-        }
-    </script>
     <style>
         .card-grid {
             display: grid;
@@ -94,70 +79,81 @@
 
     </style>
 
-<div class="container mx-auto px-4 py-8">
-  <div class="card-grid">
-    {% for event in events %}
-    <div class="event-card bg-white rounded-xl shadow-lg overflow-hidden transition-transform duration-300 hover:scale-105">
-      <img src="{{ event.image if event.image else event.thumbnail }}" alt="{{ event.title }}" class="w-full h-48 object-cover">
-      <div class="card-content p-4">
-        <div class="flex justify-between items-start mb-2">
-          <div class="flex-grow pr-2">
-            <h4 class="event-title text-xl font-bold text-gray-800">{{ event.title }}</h4>
-            <p class="text-sm text-gray-600">{{ event.date.when }}</p>
-          </div>
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-box-arrow-up-right text-gray-500 flex-shrink-0" viewBox="0 0 16 16">
-            <path fill-rule="evenodd" d="M8.636 3.5a.5.5 0 0 0-.5-.5H1.5A1.5 1.5 0 0 0 0 4.5v10A1.5 1.5 0 0 0 1.5 16h10a1.5 1.5 0 0 0 1.5-1.5V7.864a.5.5 0 1 0-1 0V14.5a.5.5 0 0 1-.5.5h-10a.5.5 0 0 1-.5-.5v-10a.5.5 0 0 1 .5-.5h6.636a.5.5 0 0 0 .5-.5z"/>
-            <path fill-rule="evenodd" d="M16 .5a.5.5 0 0 0-.5-.5h-5a.5.5 0 0 0 0 1h3.793L6.146 9.146a.5.5 0 1 0 .708.708L15 1.707V5.5a.5.5 0 0 0 1 0v-5z"/>
-          </svg>
-        </div>
-        <div class="flex items-center justify-between mb-4">
-          <div class="flex items-center">
+    <div class="container mx-auto px-4 py-8">
+        <div class="card-grid">
+            {% for event in events %}
+                <div class="event-card bg-white rounded-xl shadow-lg overflow-hidden transition-transform duration-300 hover:scale-105">
+                    <img src="{{ event.image if event.image else event.thumbnail }}" alt="{{ event.title }}"
+                         class="w-full h-48 object-cover">
+                    <div class="card-content p-4">
+                        <div class="flex justify-between items-start mb-2">
+                            <div class="flex-grow pr-2">
+                                <h4 class="event-title text-xl font-bold text-gray-800">{{ event.title }}</h4>
+                                <p class="text-sm text-gray-600">{{ event.date.when }}</p>
+                            </div>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
+                                 class="bi bi-box-arrow-up-right text-gray-500 flex-shrink-0" viewBox="0 0 16 16">
+                                <path fill-rule="evenodd"
+                                      d="M8.636 3.5a.5.5 0 0 0-.5-.5H1.5A1.5 1.5 0 0 0 0 4.5v10A1.5 1.5 0 0 0 1.5 16h10a1.5 1.5 0 0 0 1.5-1.5V7.864a.5.5 0 1 0-1 0V14.5a.5.5 0 0 1-.5.5h-10a.5.5 0 0 1-.5-.5v-10a.5.5 0 0 1 .5-.5h6.636a.5.5 0 0 0 .5-.5z"/>
+                                <path fill-rule="evenodd"
+                                      d="M16 .5a.5.5 0 0 0-.5-.5h-5a.5.5 0 0 0 0 1h3.793L6.146 9.146a.5.5 0 1 0 .708.708L15 1.707V5.5a.5.5 0 0 0 1 0v-5z"/>
+                            </svg>
+                        </div>
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="flex items-center">
             <span class="font-semibold mr-2 flex items-center gap-1">Rating: {{ event.venue.rating if event.venue else 'N/A' }}
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-star-fill" viewBox="0 0 16 16">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-star-fill"
+                   viewBox="0 0 16 16">
                 <path d="M3.612 15.443c-.386.198-.824-.149-.746-.592l.83-4.73L.173 6.765c-.329-.314-.158-.888.283-.95l4.898-.696L7.538.792c.197-.39.73-.39.927 0l2.184 4.327 4.898.696c.441.062.612.636.282.95l-3.522 3.356.83 4.73c.078.443-.36.79-.746.592L8 13.187l-4.389 2.256z"/>
               </svg>
             </span>
-          </div>
-          <div class="flex space-x-2" id="previousFeedback">
-              <form id="event-form-{{ event.id }}">
-                              <input type="hidden" name="title" value="{{ event.title }}">
-                              <input type="hidden" name="date" value="{{ event.date.when }}">
-                              <input type="hidden" name="location" value="{{ event.location }}">
-                              <input type="hidden" name="description" value="{{ event.description }}">
-                              <button class="action-button bg-green-500 text-white rounded-lg" type="button"
-                                      onclick="scheduleEvent('{{ event.id }}')">
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-calendar" viewBox="0 0 16 16">
-                <path d="M3.5 0a.5.5 0 0 1 .5.5V1h8V.5a.5.5 0 0 1 1 0V1h1a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h1V.5a.5.5 0 0 1 .5-.5zM1 4v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V4H1z"/>
-              </svg>
-            </button>
-                          </form>
+                            </div>
+                            <div class="flex space-x-2" id="calendarButton">
+                                <form id="event-form-{{ event }}">
+                                    <input type="hidden" name="title" value="{{ event.title }}">
+                                    <input type="hidden" name="date" value="{{ event.date.when }}">
+                                    <input type="hidden" name="location" value="{{ event.location }}">
+                                    <input type="hidden" name="description" value="{{ event.description }}">
+                                    <button class="action-button bg-green-500 text-white rounded-lg" type="button"
+                                            onclick="scheduleEvent('{{ event }}')">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"
+                                             fill="currentColor" class="bi bi-calendar" viewBox="0 0 16 16">
+                                            <path d="M3.5 0a.5.5 0 0 1 .5.5V1h8V.5a.5.5 0 0 1 1 0V1h1a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h1V.5a.5.5 0 0 1 .5-.5zM1 4v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V4H1z"/>
+                                        </svg>
+                                    </button>
+                                </form>
 
-            <button class="action-button bg-green-500 text-white rounded-lg">
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-chat-right-text" viewBox="0 0 16 16">
-                <path d="M2 1a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h9.586a2 2 0 0 1 1.414.586l2 2V2a1 1 0 0 0-1-1H2zm12-1a2 2 0 0 1 2 2v12.793a.5.5 0 0 1-.854.353l-2.853-2.853a1 1 0 0 0-.707-.293H2a2 2 0 0 1-2-2V2a2 2 0 0 1 2-2h12z"/>
-                <path d="M3 3.5a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5zM3 6a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9A.5.5 0 0 1 3 6zm0 2.5a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1-.5-.5z"/>
-              </svg>
-            </button>
-            <button class="action-button bg-green-500 text-white rounded-lg">
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-share" viewBox="0 0 16 16">
-                <path d="M13.5 1a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3zM11 2.5a2.5 2.5 0 1 1 .603 1.628l-6.718 3.12a2.499 2.499 0 0 1 0 1.504l6.718 3.12a2.5 2.5 0 1 1-.488.876l-6.718-3.12a2.5 2.5 0 1 1 0-3.256l6.718-3.12A2.5 2.5 0 0 1 11 2.5zm-8.5 4a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3zm11 5.5a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3z"/>
-              </svg>
-            </button>
-          </div>
+                                <button class="action-button bg-green-500 text-white rounded-lg">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor"
+                                         class="bi bi-chat-right-text" viewBox="0 0 16 16">
+                                        <path d="M2 1a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h9.586a2 2 0 0 1 1.414.586l2 2V2a1 1 0 0 0-1-1H2zm12-1a2 2 0 0 1 2 2v12.793a.5.5 0 0 1-.854.353l-2.853-2.853a1 1 0 0 0-.707-.293H2a2 2 0 0 1-2-2V2a2 2 0 0 1 2-2h12z"/>
+                                        <path d="M3 3.5a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5zM3 6a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9A.5.5 0 0 1 3 6zm0 2.5a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1-.5-.5z"/>
+                                    </svg>
+                                </button>
+                                <button class="action-button bg-green-500 text-white rounded-lg">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor"
+                                         class="bi bi-share" viewBox="0 0 16 16">
+                                        <path d="M13.5 1a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3zM11 2.5a2.5 2.5 0 1 1 .603 1.628l-6.718 3.12a2.499 2.499 0 0 1 0 1.504l6.718 3.12a2.5 2.5 0 1 1-.488.876l-6.718-3.12a2.5 2.5 0 1 1 0-3.256l6.718-3.12A2.5 2.5 0 0 1 11 2.5zm-8.5 4a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3zm11 5.5a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3z"/>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="flex items-center mt-auto">
+                            <input type="text" placeholder="Leave feedback"
+                                   class="feedback-input border rounded-l-lg py-2 px-3">
+                            <button class="bg-green-500 text-white rounded-r-lg px-3 py-2 h-full">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
+                                     class="bi bi-arrow-right" viewBox="0 0 16 16">
+                                    <path fill-rule="evenodd"
+                                          d="M1 8a.5.5 0 0 1 .5-.5h11.793l-3.147-3.146a.5.5 0 0 1 .708-.708l4 4a.5.5 0 0 1 0 .708l-4 4a.5.5 0 0 1-.708-.708L13.293 8.5H1.5A.5.5 0 0 1 1 8z"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
         </div>
-        <div class="flex items-center mt-auto">
-          <input type="text" placeholder="Leave feedback" class="feedback-input border rounded-l-lg py-2 px-3">
-          <button class="bg-green-500 text-white rounded-r-lg px-3 py-2 h-full">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-arrow-right" viewBox="0 0 16 16">
-              <path fill-rule="evenodd" d="M1 8a.5.5 0 0 1 .5-.5h11.793l-3.147-3.146a.5.5 0 0 1 .708-.708l4 4a.5.5 0 0 1 0 .708l-4 4a.5.5 0 0 1-.708-.708L13.293 8.5H1.5A.5.5 0 0 1 1 8z"/>
-            </svg>
-          </button>
-        </div>
-      </div>
     </div>
-    {% endfor %}
-  </div>
-</div>
     <script>
         function toggleSlidingBox(button) {
             // Find the sliding box that is a sibling of the button
@@ -210,51 +206,62 @@
         });
 
 
-document.addEventListener('DOMContentLoaded', () => {
-    const feedbackInput = document.getElementById('feedbackInput');
-    const submitButton = document.getElementById('submitFeedback');
-    const previousFeedbackContainer = document.getElementById('previousFeedback');
+        document.addEventListener('DOMContentLoaded', () => {
+            const feedbackInput = document.getElementById('feedbackInput');
+            const submitButton = document.getElementById('submitFeedback');
+            const previousFeedbackContainer = document.getElementById('previousFeedback');
 
-    // Load previous feedback from LocalStorage (or a server API)
-    const loadPreviousFeedback = () => {
-        const feedbacks = JSON.parse(localStorage.getItem('feedbacks')) || [];
-        previousFeedbackContainer.innerHTML = '';  // Clear previous entries
+            // Load previous feedback from LocalStorage (or a server API)
+            const loadPreviousFeedback = () => {
+                const feedbacks = JSON.parse(localStorage.getItem('feedbacks')) || [];
+                previousFeedbackContainer.innerHTML = '';  // Clear previous entries
 
-        if (feedbacks.length === 0) {
-            previousFeedbackContainer.innerHTML = '<p>No feedback yet.</p>';
-        } else {
-            feedbacks.forEach(feedback => {
-                const feedbackItem = document.createElement('p');
-                feedbackItem.textContent = feedback;
-                previousFeedbackContainer.appendChild(feedbackItem);
+                if (feedbacks.length === 0) {
+                    previousFeedbackContainer.innerHTML = '<p>No feedback yet.</p>';
+                } else {
+                    feedbacks.forEach(feedback => {
+                        const feedbackItem = document.createElement('p');
+                        feedbackItem.textContent = feedback;
+                        previousFeedbackContainer.appendChild(feedbackItem);
+                    });
+                }
+            };
+
+            // Handle submit feedback
+            submitButton.addEventListener('click', () => {
+                const newFeedback = feedbackInput.value.trim();
+                if (newFeedback === '') {
+                    alert('Please enter some feedback');
+                    return;
+                }
+
+                let feedbacks = JSON.parse(localStorage.getItem('feedbacks')) || [];
+                feedbacks.push(newFeedback);  // Add the new feedback
+
+                // Save the updated feedback array in LocalStorage (could be saved to a server)
+                localStorage.setItem('feedbacks', JSON.stringify(feedbacks));
+
+                // Clear input and reload previous feedback
+                feedbackInput.value = '';
+                loadPreviousFeedback();
             });
-        }
-    };
 
-    // Handle submit feedback
-    submitButton.addEventListener('click', () => {
-        const newFeedback = feedbackInput.value.trim();
-        if (newFeedback === '') {
-            alert('Please enter some feedback');
-            return;
-        }
+            // Initially load previous feedback when the page is loaded
+            loadPreviousFeedback();
+        });
 
-        let feedbacks = JSON.parse(localStorage.getItem('feedbacks')) || [];
-        feedbacks.push(newFeedback);  // Add the new feedback
+    function scheduleEvent(eventId) {
+        alert(`Event "${event.title}" successfully created!`);
+        const form = document.getElementById(`event-form-${eventId}`);
+        const formData = new FormData(form);
+        const eventData = {};
+        formData.forEach((value, key) => {
+            eventData[key] = value;
+        });
 
-        // Save the updated feedback array in LocalStorage (could be saved to a server)
-        localStorage.setItem('feedbacks', JSON.stringify(feedbacks));
-
-        // Clear input and reload previous feedback
-        feedbackInput.value = '';
-        loadPreviousFeedback();
-    });
-
-    // Initially load previous feedback when the page is loaded
-    loadPreviousFeedback();
-});
-
-
-    </script>
+        // Redirect to OAuth authorization URL
+        window.location.href = `http://localhost:3000/oauth?${new URLSearchParams(eventData).toString()}`;
+    }
+</script>
 
 {% endblock %}
