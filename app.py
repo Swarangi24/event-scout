@@ -1,30 +1,38 @@
 import logging
-import grpc
-import requests
-from bson import ObjectId
-from flask import jsonify
-from flask_pymongo import PyMongo
-from grpc_event_pb2_grpc import EventServiceStub
-from flask import Flask, render_template, request, redirect, url_for, session, flash
-from pymongo import MongoClient
+from datetime import datetime
+
 import bcrypt
+import grpc
 import jwt
-from datetime import datetime, timedelta
+import requests
 from authlib.jose import jwt
-import os  # For accessing environment variables
-from flask import Flask, redirect, url_for, request, session, jsonify, render_template  # Flask core functions and classes
-from flask_dance.contrib.google import make_google_blueprint, google  # Google OAuth integration
+from bson import ObjectId
+from flask import Flask, redirect, url_for, request, session, jsonify, \
+    render_template  # Flask core functions and classes
+from flask import flash
+from flask_pymongo import PyMongo
+from google.oauth2 import service_account
 from google.oauth2.credentials import Credentials  # For handling Google OAuth credentials
-from googleapiclient.discovery import build  # For interacting with Google APIs
+from googleapiclient.discovery import build
+from pymongo import MongoClient
+
+from config import Config
+from grpc_event_pb2_grpc import EventServiceStub
 
 logging.basicConfig(level=logging.DEBUG)
 # Home Route to Render the Form
-app = Flask(__name__ )
+app = Flask(__name__)
 app.config["MONGO_URI"] = "mongodb://localhost:27017/eventdb"
 app.secret_key = '6692a191b7c75f139ddcea9dfc7d1c8f'
 JWT_SECRET = "a588896c6c34617ae8ec6b8887c0eb3a02697670059715c9383209167ec3c39f"
 JWT_ALGORITHM = 'HS256'
+SERVICE_ACCOUNT_FILE = 'service_account.json'
+SCOPES = ['https://www.googleapis.com/auth/calendar',
+          'https://www.googleapis.com/auth/calendar.readonly', ]
+credentials = service_account.Credentials.from_service_account_file(
+    SERVICE_ACCOUNT_FILE, scopes=SCOPES)
 mongo = PyMongo(app)
+app.config.from_object(Config)
 events_collection = mongo.db.events
 client = MongoClient('mongodb://localhost:27017/')
 db = client['eventdb']  # Change this to your database name
@@ -34,10 +42,22 @@ stub = EventServiceStub(channel)
 SERP_API_KEY = "cc77d3bb5a1c77305d0b96c1f02875eb56cbe5bca3040e591437b56204c0ee90"
 
 
+def configure_test_db():
+    app.config["MONGO_URI"] = "mongodb://localhost:27017/testdb"
+    global db, events_collection
+    db = client['testdb']
+    events_collection = db['events']
+
+
 @app.route("/")
 def index():
     message = request.args.get('message')
     return render_template('index.html', message=message)
+
+
+@app.route("/aboutus.html")
+def aboutus():
+    return render_template('aboutus.html')
 
 
 def decode_token(token):
@@ -85,16 +105,12 @@ def register():
         else:
             hashed = bcrypt.hashpw(password2.encode('utf-8'), bcrypt.gensalt())
 
-            # Generate JWT token
-            token_payload = {
-                "email": email,
-                "exp": datetime.utcnow() + timedelta(hours=1)  # Token expires in 1 hour
-            }
-            token = jwt.encode({'alg': JWT_ALGORITHM, 'typ': 'JWT'}, token_payload, JWT_SECRET)
-
             # Insert user into MongoDB
-            user_input = {'name': user, 'email': email, 'password': hashed, 'token': token}
+            user_input = {'name': user, 'email': email, 'password': hashed, 'calendar_exists': False}
             records.insert_one(user_input)
+
+            # Create the user's calendar
+            create_user_calendar(email)
 
             session["email"] = email
             return redirect(url_for("index", message=f"Hello! You have registered as {email}"))
@@ -116,17 +132,15 @@ def loginn():
         if user_found:
             passwordcheck = user_found['password']
             if bcrypt.checkpw(password.encode('utf-8'), passwordcheck):
-                # Generate a new JWT token on login
-                token_payload = {
-                    "email": email,
-                    "exp": datetime.utcnow() + timedelta(hours=1)  # Token expires in 1 hour
-                }
-                token = jwt.encode({'alg': JWT_ALGORITHM, 'typ': 'JWT'}, token_payload, JWT_SECRET)
-
-                # Update the user's token in MongoDB
-                records.update_one({"email": email}, {"$set": {"token": token}})
-
                 session["email"] = email
+
+                # Check if the user already has a calendar
+                if not user_found.get("calendar_exists", False):
+                    create_user_calendar(email)  # Create calendar if it doesn't exist
+                else:
+                    # User already has a calendar
+                    print("User already has a calendar.")
+
                 return redirect(url_for("index", message=f"Hello! You have logged in as {email}"))
 
             else:
@@ -135,7 +149,36 @@ def loginn():
         else:
             message = 'Email not found'
             return render_template('login.html', message=message)
+
     return render_template('login.html', message=message)
+
+
+def create_user_calendar(user_email):
+    service = build('calendar', 'v3', credentials=credentials)
+
+    # Create a new calendar for the user
+    calendar_body = {
+        'summary': f"{user_email}'s Calendar",
+        'timeZone': 'GMT+5:30'  # Set the desired timezone
+    }
+
+    try:
+        created_calendar = service.calendars().insert(body=calendar_body).execute()
+        calendar_id = created_calendar['id']
+        print(f"Created calendar ID: {calendar_id}")  # Debugging line
+        share_calendar_with_service_account(calendar_id)
+        records.update_one({"email": user_email}, {"$set": {"calendar_exists": True}})
+    except Exception as e:
+        print(f"Error creating calendar: {e}")
+
+    # Update the user's record in MongoDB to indicate that the calendar exists
+    records.update_one({"email": user_email}, {"$set": {"calendar_exists": True}})
+
+
+def user_exists(email):
+    """Check if the user already exists in the database and has a calendar."""
+    user_record = records.find_one({"email": email})
+    return user_record is not None and user_record.get("calendar_exists", False)
 
 
 @app.route("/logout")
@@ -162,6 +205,7 @@ def fetch_events_from_serpapi(url):
         return response.json().get('events_results', [])
     return []
 
+
 @app.route('/browse.html')
 def browse():
     event_name = request.args.get('event')
@@ -173,34 +217,88 @@ def browse():
         url = f"https://serpapi.com/search.json?engine=google_events&q=Events={event_name}+in+Maharashtra&hl=en&gl=us&api_key={SERP_API_KEY}"
 
     events = fetch_events_from_serpapi(url)
-    #return render_template('browse.html', user_info=user_info, events=events)
+    # return render_template('browse.html', user_info=user_info, events=events)
     return render_template('browse.html', events=events)
+
 
 def load_credentials():
     return Credentials.from_authorized_user_file('credentials.json')
 
-@app.route('/api/schedule-event', methods=['POST'])
-def schedule_event():
-    data = request.form
-    event_data = {
-        'summary': data['title'],
-        'start': {
-            'dateTime': data['date'] + 'T09:00:00',  # Set time accordingly
-            'timeZone': 'America/Los_Angeles',  # Change to your time zone
-        },
-        'end': {
-            'dateTime': data['date'] + 'T10:00:00',  # Set duration accordingly
-            'timeZone': 'America/Los_Angeles',
-        },
-        'location': data['location'],
-        'description': data['description'],
-    }
 
-    credentials = load_credentials()
+def share_calendar_with_service_account(calendar_id):
     service = build('calendar', 'v3', credentials=credentials)
 
-    event = service.events().insert(calendarId='primary', body=event_data).execute()
-    return jsonify({'status': 'success', 'eventId': event['id']})
+    # Define the permission body
+    permission_body = {
+        'role': 'owner',  # Set role as needed (e.g., 'owner', 'writer', 'reader')
+        'type': 'user',  # Use 'user' for individual user permissions
+        'emailAddress': 'eventcalendar@eventscout-439609.iam.gserviceaccount.com'
+    }
+
+    print(f"Sharing calendar {calendar_id} with {permission_body['emailAddress']}")
+
+    try:
+        service.acl().insert(calendarId=calendar_id, body=permission_body).execute()
+    except Exception as e:
+        print(f"Error sharing calendar: {e}")
+
+
+@app.route('/schedule_event', methods=['POST'])
+def schedule_event():
+    if "email" not in session:
+        return jsonify({"status": "error", "message": "User not logged in"}), 403
+
+    user_email = session['email']
+    event_details = {
+        "title": request.form.get('title'),
+        "location": request.form.get('location', "Online"),
+        "link": request.form.get('link', ""),
+        "date": request.form.get('date')
+    }
+
+    # Extracting start and end dates from the event date string
+    date_str = event_details['date']  # e.g., "Mon, Nov 4, 12 AM – Tue, Nov 5, 12 AM GMT+5:30"
+    start_date_str, end_date_str = date_str.split(' – ')
+
+    # Adjusted parsing format
+    start_datetime = datetime.strptime(start_date_str, "%a, %b %d, %I %p")
+    end_datetime = datetime.strptime(end_date_str.split(' GMT')[0], "%a, %b %d, %I %p")
+
+    # Format the dates as 'YYYY-MM-DD'
+    start_date = start_datetime.strftime("%Y-%m-%d")
+    end_date = end_datetime.strftime("%Y-%m-%d")
+
+    event_body = {
+        'summary': event_details['title'],
+        'location': event_details['location'],
+        'description': event_details['link'],  # Use description for the link if needed
+        'start': {
+            'date': start_date
+        },
+        'end': {
+            'date': end_date
+        }
+    }
+
+    result = add_event_to_google_calendar(user_email, event_body)
+
+    if result:
+        return jsonify({"status": "success", "message": "Event scheduled successfully!"})
+    else:
+        return jsonify({"status": "error", "message": "Failed to schedule event"}), 500
+
+
+def add_event_to_google_calendar(email, event):
+    try:
+        service = build('calendar', 'v3', credentials=credentials)
+        calendar_id = email
+
+        event_result = service.events().insert(calendarId=calendar_id, body=event).execute()
+        return event_result
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        return None
+
 
 @app.route('/organizerForm.html')
 def form():
@@ -212,34 +310,60 @@ def form():
 def event_details():
     return render_template('eventDetails.html')
 
+
 # Create Event
 @app.route('/event', methods=['POST'])
 def create_event():
-    data = request.json
+    data = request.get_json()
+
+    # Check for required fields and return appropriate error messages
+    if not data.get('name'):
+        return jsonify({'message': 'Event name is required'}), 400
+    if not data.get('description'):
+        return jsonify({'message': 'Event description is required'}), 400
+    if not data.get('eventLocation'):
+        return jsonify({'message': 'Event location is required'}), 400
+    if not data.get('dateFrom'):
+        return jsonify({'message': 'Event start date is required'}), 400
+    if not data.get('dateTo'):
+        return jsonify({'message': 'Event end date is required'}), 400
+    if not data.get('price'):
+        return jsonify({'message': 'Event price is required'}), 400
+    if not data.get('category'):
+        return jsonify({'message': 'Event category is required'}), 400
+    if not data.get('created_by'):
+        return jsonify({'message': 'Event creator email is required'}), 400
+
+    # If all required fields are present, proceed to create the event
     event_id = events_collection.insert_one(data).inserted_id
-    return jsonify({"message": "Event created", "id": str(event_id)}), 201
+    return jsonify({'message': 'Event created', 'id': str(event_id)}), 201
+
 
 # Get All Events with Optional Search
-
-
 @app.route('/events', methods=['GET'])
 def get_events():
-    search_query = request.args.get('search', '')
-    events = []
+    user_email = session.get("email")
+    if user_email:
+        search_query = request.args.get('search', '')
+        events = []
+        query = {"created_by": user_email}
+        if search_query:
+            query["eventName"] = {"$regex": search_query, "$options": "i"}
+        cursor = events_collection.find(query)
 
-    if search_query:
-        cursor = events_collection.find({"eventName": {"$regex": search_query, "$options": "i"}})
-    else:
-        cursor = events_collection.find()
+        for event in cursor:
+            event['_id'] = str(event['_id'])
+            events.append(event)
 
-    for event in cursor:
-        event['_id'] = str(event['_id'])
-        events.append(event)
-    return jsonify(events), 200
+        if not events:  # If no events found
+            return jsonify({"message": "No events available"}), 200
+
+        return jsonify(events), 200
+
+    return jsonify({"message": "Login to create events"}), 401
+
 
 # Get Single Event
-
-
 @app.route('/event/<id>', methods=['GET'])
 def get_event(id):
     event = events_collection.find_one({"_id": ObjectId(id)})
@@ -251,11 +375,18 @@ def get_event(id):
 
 
 # Update Event Route
-
-
-@app.route('/updateEvent/<id>', methods=['GET','POST','PUT'])
+@app.route('/updateEvent/<id>', methods=['GET', 'POST', 'PUT'])
 def update_event(id):
     if request.method == 'PUT':
+        user_email = session.get("email")
+        if not user_email:
+            return jsonify({"error": "User not logged in"}), 401
+
+        # Check if the event is created by the logged-in user
+        event = events_collection.find_one({"_id": ObjectId(id), "created_by": user_email})
+        if not event:
+            return jsonify({"error": "Event not found or you do not have permission to update it"}), 404
+
         try:
             # Retrieve JSON data from the request
             data = request.get_json()
@@ -314,7 +445,10 @@ def update_event(id):
 # Delete Event
 @app.route('/event/<id>', methods=['DELETE'])
 def delete_event(id):
-    result = events_collection.delete_one({"_id": ObjectId(id)})
+    user_email = session.get("email")
+    if not user_email:
+        return jsonify({"error": "User not logged in"}), 401
+    result = events_collection.delete_one({"_id": ObjectId(id), "created_by": user_email})
     if result.deleted_count > 0:
         return jsonify({"message": "Event deleted"}), 200
     else:
@@ -322,4 +456,4 @@ def delete_event(id):
 
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True, port=3000)

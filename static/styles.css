@@ -39,12 +39,12 @@
 .head {
   box-sizing: border-box;
     margin-top: 180px;
-  top: 90%;
+  top: 70%;
     left: 20%;
   transform: translate(-50%, -50%);
 }
 .head h1 {
-    font-size: 5rem;
+    font-size: 7rem;
     font-weight: bold;
     text-decoration-color: white;
 }

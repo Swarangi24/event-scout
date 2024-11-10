@@ -1,0 +1,21 @@
+
+services:
+  web:
+    build: .
+    ports:
+      - "5000:5000"  # Map port 5000 on the host to port 5000 on the container
+    environment:
+      - MONGO_URI=mongodb://mongo:27017/eventdb  # Update MongoDB URI to point to the mongo service
+      - SECRET_KEY=your_secret_key  # Set your secret key here (ideally from an env file)
+    depends_on:
+      - mongo  # Ensure MongoDB is started before the Flask app
+
+  mongo:
+    image: mongo:latest  # Use the latest MongoDB image
+    ports:
+      - "27017:27017"  # Map MongoDB port
+    volumes:
+      - mongo_data:/data/db  # Persist data using a Docker volume
+
+volumes:
+  mongo_data:  # Define a volume for MongoDB data

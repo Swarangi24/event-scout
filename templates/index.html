@@ -24,9 +24,10 @@
             <img src="/static/images/logo.png" alt="EventScout Logo" class="logo" style="filter: brightness(50%)">
             <nav class="nav-links navbar navbar-light">
                 <a href="#home" style="color: white; text-decoration: none;">Home</a>
-                <a href="#about" style="color: white; text-decoration: none;">About Us</a>
-                <a href="http://localhost:3000" style="color: white; text-decoration: none;">Browse</a>
+                <a href="aboutus.html" style="color: white; text-decoration: none;">About Us</a>
+                <a href="browse.html" style="color: white; text-decoration: none;">Browse</a>
                 <a href="organizerForm.html" style="color: white; text-decoration: none;">Organize</a>
+                <a href="eventDetails.html" style="color: white; text-decoration: none;">View</a>
                 {% if 'email' in session %}
                     <a href="/logout" style="color: white; padding-left: 50px;"><span
                             class="glyphicon glyphicon-log-out">Logout</span></a>
@@ -38,13 +39,13 @@
             </nav>
         </div>
         <div class="head"><h1 style="padding-left: 570px;">
-            <span style="color:#ddc5e5 ">EV</span>
-            <span style="color:#4c1f59">ENT</span>
+            <span style="color:#ddc5e5 ">EVE</span>
+            <span style="color:#4c1f59">-NT</span>
             <span style="color: #ad2e2e">SCOUT</span>
         </h1></div>
         <form class="search-bar" role="search" onsubmit="event.preventDefault(); searchEvents();">
             <div class="search-input-wrapper">
-                <img src="search-icon.png" alt="" class="search-icon">
+                <img src="/static/images/search-icon.jpg" alt="" class="search-icon">
                 <label for="search-events" class="visually-hidden">Search Events</label>
                 <input type="search" id="search-events" class="search-input" placeholder="Search Events" required>
             </div>
@@ -70,7 +71,7 @@
             <h2>Food Festival</h2>
             <button class="" onclick="searchCategory('Food+Festival')">Search</button>
         </div>
-        <div class="about" style="padding-top: 7px">
+        <div class="about" style="padding-top: 2px">
             <h3>PLAN ~ DISCOVER ~ CELEBRATE</h3>
             <p>EventScout Brings your Events to Life</p>
             <p>From concept to celebration, EventScout is dedicated to making every event a success, providing you with

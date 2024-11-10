@@ -22,8 +22,3 @@ function filterEvents() {
 document.querySelectorAll('input[name="category"]').forEach(checkbox => {
     checkbox.addEventListener('change', filterEvents);
 });
-
-function scheduleEvent(eventTitle, eventDate) {
-            alert("Scheduling event: " + eventTitle + " on " + eventDate);
-            // Implement logic to schedule the event on the calendar
-}

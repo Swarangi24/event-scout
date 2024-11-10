@@ -57,8 +57,7 @@ const responseGoogle = (response) => {
           cookiePolicy={'single_host_origin'}
           responseType='code'
           accessType='offline'
-          scope='openid email profile https://www.googleapis.com/auth/calendar'
-          redirectUri='http://localhost:3000'/>
+          scope='openid email profile https://www.googleapis.com/auth/calendar'/>
             </div>
         </div>
     );
