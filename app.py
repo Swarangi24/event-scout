@@ -10,9 +10,6 @@ from bson import ObjectId
 from flask import Flask, redirect, url_for, request, session, jsonify, render_template
 from flask import flash
 from flask_pymongo import PyMongo
-from google.oauth2 import service_account
-from google.oauth2.credentials import Credentials  # For handling Google OAuth credentials
-from googleapiclient.discovery import build
 from pymongo import MongoClient
 
 from config import Config
