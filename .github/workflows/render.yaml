@@ -14,4 +14,4 @@ services:
         sync: false
       - key: SERP_API_KEY
         sync: false
-    postBuildCommand: "python -m unittest -v test.py"
+    postBuildCommand: "python -m unittest -v tests/test_browse.py"
