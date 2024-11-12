@@ -1,52 +1,20 @@
-# Ignore environment-specific configuration files
+# Ignore environment and config files
 .env
-config.py
-*.config
-
-# Ignore sensitive credential files
 service_account.json
-credentials.json
+config.py
 
-# Python bytecode and cache files
+# Python cache files
 __pycache__/
-*.pyc
-*.pyo
-*.pyd
+*.py[cod]
+
+# Database and credentials
 *.db
-
-# Ignore IDE settings
-.vscode/
-.idea/
-*.sublime-workspace
-*.sublime-project
-
-# Ignore virtual environment
-venv/
-.env/
-*.egg-info/
-
-# Ignore system files
-.DS_Store
-Thumbs.db
-
-# Ignore log files
-*.log
-
-# Ignore compiled and temporary files
-*.tmp
-*.bak
-*.swp
-
-# Ignore database dumps
 *.sqlite3
 
-# Ignore JWT secret keys
-*.secret
-*.key
-secret_key.txt
+# IDE and editor files
+.vscode/
+.idea/
 
-# Ignore backup and archive files
-*.tar.gz
-*.zip
-*.rar
-*.7z
+# OS files
+.DS_Store
+Thumbs.db

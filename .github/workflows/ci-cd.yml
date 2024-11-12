@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: event-scout
+    env: python
+    region: oregon
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "python app.py"
+    envVars:
+      - key: MONGO_URI
+        sync: false
+      - key: SECRET_KEY
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: SERP_API_KEY
+        sync: false
+    postBuildCommand: "python -m unittest -v test.py"

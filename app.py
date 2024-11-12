@@ -7,8 +7,7 @@ import jwt
 import requests
 from authlib.jose import jwt
 from bson import ObjectId
-from flask import Flask, redirect, url_for, request, session, jsonify, \
-    render_template  # Flask core functions and classes
+from flask import Flask, redirect, url_for, request, session, jsonify, render_template
 from flask import flash
 from flask_pymongo import PyMongo
 from google.oauth2 import service_account
@@ -18,13 +17,18 @@ from pymongo import MongoClient
 
 from config import Config
 from grpc_event_pb2_grpc import EventServiceStub
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
 
 logging.basicConfig(level=logging.DEBUG)
 # Home Route to Render the Form
 app = Flask(__name__)
-app.config["MONGO_URI"] = "mongodb://localhost:27017/eventdb"
-app.secret_key = '6692a191b7c75f139ddcea9dfc7d1c8f'
-JWT_SECRET = "a588896c6c34617ae8ec6b8887c0eb3a02697670059715c9383209167ec3c39f"
+app.config["MONGO_URI"] = os.getenv("MONGO_URI")
+app.secret_key = os.getenv("SECRET_KEY")
+JWT_SECRET = os.getenv("JWT_SECRET")
+SERP_API_KEY = os.getenv("SERP_API_KEY")
 JWT_ALGORITHM = 'HS256'
 SERVICE_ACCOUNT_FILE = 'service_account.json'
 SCOPES = ['https://www.googleapis.com/auth/calendar',
@@ -39,7 +43,6 @@ db = client['eventdb']  # Change this to your database name
 records = db['register']  # Change this to your collection name
 channel = grpc.insecure_channel('localhost:50051')
 stub = EventServiceStub(channel)
-SERP_API_KEY = "cc77d3bb5a1c77305d0b96c1f02875eb56cbe5bca3040e591437b56204c0ee90"
 
 
 def configure_test_db():
@@ -331,8 +334,15 @@ def create_event():
         return jsonify({'message': 'Event price is required'}), 400
     if not data.get('category'):
         return jsonify({'message': 'Event category is required'}), 400
-    if not data.get('created_by'):
+
+        # Use the email from the session
+    created_by = session.get("email")
+
+        # Ensure the 'created_by' field is added to the data
+    if not created_by:
         return jsonify({'message': 'Event creator email is required'}), 400
+
+    data['created_by'] = created_by  # Add the email to the event data
 
     # If all required fields are present, proceed to create the event
     event_id = events_collection.insert_one(data).inserted_id
@@ -456,4 +466,6 @@ def delete_event(id):
 
 
 if __name__ == '__main__':
-    app.run(debug=True, port=3000)
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host='0.0.0.0', port=port)
+
