@@ -29,10 +29,8 @@ JWT_ALGORITHM = 'HS256'
 SERVICE_ACCOUNT_FILE = 'service_account.json'
 SCOPES = ['https://www.googleapis.com/auth/calendar',
           'https://www.googleapis.com/auth/calendar.readonly', ]
-credentials = service_account.Credentials.from_service_account_file(
-    SERVICE_ACCOUNT_FILE, scopes=SCOPES)
+
 mongo = PyMongo(app)
-app.config.from_object(Config)
 events_collection = mongo.db.events
 client = MongoClient('mongodb://localhost:27017/')
 db = client['eventdb']  # Change this to your database name
@@ -152,28 +150,6 @@ def loginn():
     return render_template('login.html', message=message)
 
 
-def create_user_calendar(user_email):
-    service = build('calendar', 'v3', credentials=credentials)
-
-    # Create a new calendar for the user
-    calendar_body = {
-        'summary': f"{user_email}'s Calendar",
-        'timeZone': 'GMT+5:30'  # Set the desired timezone
-    }
-
-    try:
-        created_calendar = service.calendars().insert(body=calendar_body).execute()
-        calendar_id = created_calendar['id']
-        print(f"Created calendar ID: {calendar_id}")  # Debugging line
-        share_calendar_with_service_account(calendar_id)
-        records.update_one({"email": user_email}, {"$set": {"calendar_exists": True}})
-    except Exception as e:
-        print(f"Error creating calendar: {e}")
-
-    # Update the user's record in MongoDB to indicate that the calendar exists
-    records.update_one({"email": user_email}, {"$set": {"calendar_exists": True}})
-
-
 def user_exists(email):
     """Check if the user already exists in the database and has a calendar."""
     user_record = records.find_one({"email": email})
@@ -224,24 +200,6 @@ def load_credentials():
     return Credentials.from_authorized_user_file('credentials.json')
 
 
-def share_calendar_with_service_account(calendar_id):
-    service = build('calendar', 'v3', credentials=credentials)
-
-    # Define the permission body
-    permission_body = {
-        'role': 'owner',  # Set role as needed (e.g., 'owner', 'writer', 'reader')
-        'type': 'user',  # Use 'user' for individual user permissions
-        'emailAddress': 'eventcalendar@eventscout-439609.iam.gserviceaccount.com'
-    }
-
-    print(f"Sharing calendar {calendar_id} with {permission_body['emailAddress']}")
-
-    try:
-        service.acl().insert(calendarId=calendar_id, body=permission_body).execute()
-    except Exception as e:
-        print(f"Error sharing calendar: {e}")
-
-
 @app.route('/schedule_event', methods=['POST'])
 def schedule_event():
     if "email" not in session:
@@ -285,18 +243,6 @@ def schedule_event():
         return jsonify({"status": "success", "message": "Event scheduled successfully!"})
     else:
         return jsonify({"status": "error", "message": "Failed to schedule event"}), 500
-
-
-def add_event_to_google_calendar(email, event):
-    try:
-        service = build('calendar', 'v3', credentials=credentials)
-        calendar_id = email
-
-        event_result = service.events().insert(calendarId=calendar_id, body=event).execute()
-        return event_result
-    except Exception as e:
-        print(f"An error occurred: {e}")
-        return None
 
 
 @app.route('/organizerForm.html')
