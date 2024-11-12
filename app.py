@@ -12,7 +12,6 @@ from flask import flash
 from flask_pymongo import PyMongo
 from pymongo import MongoClient
 
-from config import Config
 from grpc_event_pb2_grpc import EventServiceStub
 from dotenv import load_dotenv
 import os

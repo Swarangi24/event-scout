@@ -1,7 +1,6 @@
 # Ignore environment and config files
 .env
 service_account.json
-config.py
 
 # Python cache files
 __pycache__/
